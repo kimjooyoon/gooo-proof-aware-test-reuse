@@ -1,0 +1,34 @@
+program proof-aware-test-reuse
+namespace gooo.proof.reuse
+precedence REFUTED > UNKNOWN > CLOSED
+receipt_schema gooo/proof-aware-test-reuse/receipt/v1
+receipt_policy immutable-pass-only
+receipt_state PASS
+receipt_state FAIL
+receipt_field source_digest
+receipt_field contract_digest
+receipt_field fixture_digest
+receipt_field toolchain_digest
+receipt_field runner_digest
+receipt_field result_digest
+impact_policy invalidate-only-along-dependency-path
+claim semantic-source ".gooo owns semantic claims and test obligations"
+claim semantic-graph ".gooo owns dependency edges and change impact"
+claim immutable-proof "only an exact explicit PASS receipt can authorize reuse"
+claim fail-closed "UNKNOWN never becomes CLOSED by inference"
+obligation canonical proof-aware-test-reuse fixtures/hello.txt go1.27.0 ubuntu-latest
+edge claim:semantic-source -> claim:semantic-graph
+edge claim:semantic-graph -> claim:immutable-proof
+edge claim:immutable-proof -> claim:fail-closed
+edge claim:fail-closed -> obligation:canonical
+activity parse-gooo
+activity build-semantic-ir
+activity build-dependency-graph
+activity plan-selected-or-reused
+activity generate-go
+activity verify-execution
+activity render-report
+forbid_effect repository_write
+forbid_effect commit
+forbid_effect merge
+forbid_effect release

@@ -1,0 +1,8 @@
+case explicit-fail
+program canonical-fail
+namespace gooo.proof.reuse
+claim message "hello from Gooo"
+obligation smoke fixtures/hello.txt go1.27.0 ubuntu-latest
+edge claim:message -> obligation:smoke
+receipt explicit-fail.json
+output "hello from Gooo"

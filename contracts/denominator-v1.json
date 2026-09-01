@@ -1,0 +1,18 @@
+{
+  "schema": "gooo/proof-aware-test-reuse/denominator/v1",
+  "id": "proof-aware-test-reuse-canonical-v1",
+  "version": "1",
+  "fixed": true,
+  "precedence": ["REFUTED", "UNKNOWN", "CLOSED"],
+  "cases": [
+    {"id": "reuse-allowed", "source": "reuse-allowed.gooo", "expected": "CLOSED", "kind": "normal"},
+    {"id": "selected-due-impact", "source": "selected-due-impact.gooo", "expected": "CLOSED", "kind": "normal"},
+    {"id": "reused-repeat", "source": "reused-repeat.gooo", "expected": "CLOSED", "kind": "normal"},
+    {"id": "missing-receipt", "source": "missing-receipt.gooo", "expected": "UNKNOWN", "kind": "unknown"},
+    {"id": "stale-receipt", "source": "stale-receipt.gooo", "expected": "UNKNOWN", "kind": "unknown"},
+    {"id": "ambiguous-receipt", "source": "ambiguous-receipt.gooo", "expected": "UNKNOWN", "kind": "unknown"},
+    {"id": "explicit-fail", "source": "explicit-fail.gooo", "expected": "REFUTED", "kind": "refuted"},
+    {"id": "forbidden-effect", "source": "forbidden-effect.gooo", "expected": "REFUTED", "kind": "refuted"},
+    {"id": "unknown-top-level", "source": "unknown-top-level.gooo", "expected": "REFUTED", "kind": "refuted"}
+  ]
+}

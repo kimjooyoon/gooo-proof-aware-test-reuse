@@ -1,0 +1,7 @@
+case broken-edge
+program canonical-edge
+namespace gooo.proof.reuse
+claim message "hello from Gooo"
+obligation smoke fixtures/hello.txt go1.27.0 ubuntu-latest
+edge claim:missing -> obligation:smoke
+output "hello from Gooo"

@@ -1,0 +1,8 @@
+case forbidden-effect
+program canonical-effect
+namespace gooo.proof.reuse
+claim message "hello from Gooo"
+obligation smoke fixtures/hello.txt go1.27.0 ubuntu-latest
+edge claim:message -> obligation:smoke
+effect repository_write
+output "hello from Gooo"

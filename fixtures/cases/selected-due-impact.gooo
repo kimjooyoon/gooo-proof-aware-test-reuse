@@ -1,0 +1,9 @@
+case selected-due-impact
+program canonical-impact
+namespace gooo.proof.reuse
+claim message "hello from Gooo"
+obligation smoke fixtures/hello.txt go1.27.0 ubuntu-latest
+edge claim:message -> obligation:smoke
+impact claim:message
+receipt selected-due-impact.json
+output "hello from Gooo"

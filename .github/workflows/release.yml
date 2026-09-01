@@ -1,0 +1,112 @@
+name: Immutable proof-aware test reuse release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Annotated release version, for example 0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CROSS_PROJECT_REQUIRED_GATES: "0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - uses: actions/setup-go@v6
+        with:
+          go-version: 1.27.0
+          cache: false
+      - name: Verify main commit
+        run: test "${GITHUB_REF_NAME}" = "main"
+      - name: Verify Go 1.27
+        run: test "$(go env GOVERSION)" = "go1.27.0"
+      - name: Verify formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=$(gofmt -l $(git ls-files '*.go'))
+          test -z "$files"
+      - name: Verify vet
+        run: go vet ./...
+      - name: Compile engine archive
+        run: scripts/measure-stage.sh compile "$RUNNER_TEMP/stage-metrics/compile.json" go build -buildmode=archive -trimpath -o "$RUNNER_TEMP/gooo-proof-aware-test-reuse-engine.a" ./internal/engine
+      - name: Build evaluator binary
+        run: scripts/measure-stage.sh build "$RUNNER_TEMP/stage-metrics/build.json" go build -trimpath -o "$RUNNER_TEMP/gooo-proof-aware-test-reuse-bin" ./cmd/gooo-proof-aware-test-reuse
+      - name: Run Go tests and record test events
+        shell: bash
+        run: scripts/measure-stage.sh test "$RUNNER_TEMP/stage-metrics/test.json" bash -c 'set -o pipefail; go test -json ./... | tee "$RUNNER_TEMP/go-test-events.jsonl"'
+      - name: Run fixed denominator and matched pair
+        shell: bash
+        run: CONFORMANCE_WORK_ROOT="$RUNNER_TEMP/conformance-work" CONFORMANCE_COUNTS_OUT="$RUNNER_TEMP/conformance-counts.json" REUSE_PAIR_OUT="$RUNNER_TEMP/reuse-pair.json" scripts/measure-stage.sh conformance "$RUNNER_TEMP/stage-metrics/conformance.json" scripts/conformance.sh "$RUNNER_TEMP/gooo-proof-aware-test-reuse-bin"
+      - name: Run caller-owned end-to-end integration
+        shell: bash
+        run: INTEGRATION_RESULT_OUT="$RUNNER_TEMP/integration-result.json" scripts/measure-stage.sh integration "$RUNNER_TEMP/stage-metrics/integration.json" scripts/integration.sh "$RUNNER_TEMP/gooo-proof-aware-test-reuse-bin"
+      - name: Assemble release machine evidence
+        env:
+          CONFORMANCE_WORK_ROOT: ${{ runner.temp }}/conformance-work
+        run: scripts/assemble-ci-evidence.sh "$RUNNER_TEMP/stage-metrics" "$RUNNER_TEMP/go-test-events.jsonl" "$RUNNER_TEMP/conformance-counts.json" "$RUNNER_TEMP/integration-result.json" "$RUNNER_TEMP/reuse-pair.json" "$RUNNER_TEMP/ci-evidence.json"
+      - name: Create release evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/gooo-proof-aware-test-reuse-evidence"
+          mkdir -p "$bundle"
+          cp "$RUNNER_TEMP/gooo-proof-aware-test-reuse-bin" "$bundle/gooo-proof-aware-test-reuse"
+          cp "$RUNNER_TEMP/ci-evidence.json" "$bundle/ci-evidence.json"
+          cp contracts/denominator-v1.json "$bundle/denominator-v1.json"
+          cp .gooo/proof-aware-test-reuse.gooo "$bundle/proof-aware-test-reuse.gooo"
+          jq -n --arg version "${{ inputs.version }}" --arg commit "$GITHUB_SHA" --arg toolchain "go1.27.0" --arg runner "ubuntu-latest" --arg cross_project_required_gates "0" '{schema:"gooo/proof-aware-test-reuse/release-evidence/v1",version:$version,commit:$commit,toolchain:$toolchain,runner:$runner,cross_project_required_gates:($cross_project_required_gates|tonumber),runtime_authority:{repository_writes:0,commit_authority:0,push_authority:0,merge_authority:0,release_mutation:0,local_validation_commands:0,local_validation_state:"NOT_RUN"},operator_authority:{tag:1,release:1}}' > "$bundle/release-manifest.json"
+          tar -czf "$RUNNER_TEMP/gooo-proof-aware-test-reuse-evidence.tar.gz" -C "$bundle" .
+          sha256sum "$RUNNER_TEMP/gooo-proof-aware-test-reuse-evidence.tar.gz" > "$RUNNER_TEMP/release-asset.sha256"
+      - name: Create annotated tag once
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v${{ inputs.version }}"
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            echo "existing release tag must not be modified: $tag" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" "$GITHUB_SHA" -m "gooo-proof-aware-test-reuse $tag"
+          git push origin "$tag"
+      - name: Create draft release with standard GitHub token
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v${{ inputs.version }}"
+          gh release create "$tag" --draft --title "$tag" --notes "Proof-aware test reuse release $tag. The annotated tag and published asset are immutable."
+      - name: Upload evidence before publish
+        run: gh release upload "v${{ inputs.version }}" "$RUNNER_TEMP/gooo-proof-aware-test-reuse-evidence.tar.gz"
+      - name: Publish release exactly once
+        run: gh release edit "v${{ inputs.version }}" --draft=false
+      - name: Verify immutable release, annotated tag, and asset digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v${{ inputs.version }}"
+          release=$(gh api --header 'X-GitHub-Api-Version: 2026-03-10' "repos/$GITHUB_REPOSITORY/releases/tags/$tag")
+          test "$(jq -er '.immutable' <<<"$release")" = true
+          test "$(jq -er '.assets | length' <<<"$release")" = 1
+          jq -e 'all(.assets[]; (.digest | type == "string" and startswith("sha256:")))' <<<"$release" >/dev/null
+          expected="sha256:$(awk '{print $1}' "$RUNNER_TEMP/release-asset.sha256")"
+          actual=$(jq -er --arg name "gooo-proof-aware-test-reuse-evidence.tar.gz" '.assets[] | select(.name == $name) | .digest' <<<"$release")
+          test "$actual" = "$expected"
+          ref=$(gh api --header 'X-GitHub-Api-Version: 2026-03-10' "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag")
+          test "$(jq -er '.object.type' <<<"$ref")" = tag
+          tag_object=$(jq -er '.object.sha' <<<"$ref")
+          tag_data=$(gh api --header 'X-GitHub-Api-Version: 2026-03-10' "repos/$GITHUB_REPOSITORY/git/tags/$tag_object")
+          test "$(jq -er '.object.type' <<<"$tag_data")" = commit
+          test "$(jq -er '.object.sha' <<<"$tag_data")" = "$GITHUB_SHA"
+          echo "immutable public release verified: $tag"
