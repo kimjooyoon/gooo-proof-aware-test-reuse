@@ -55,7 +55,7 @@ jq -e '
 ' "$after_out/report.json" >/dev/null
 
 jq -n \
-	--arg schema "gooo-proof-aware-test-reuse/improvement-pair/v1" \
+	--arg schema "gooo-proof-aware-test-reuse/indicator-vector/v1" \
 	--arg scenario "greeting" \
 	--arg source_digest "$(jq -r '.source_digest' "$before_out/report.json")" \
 	--arg contract_digest "$(jq -r '.contract_digest' "$before_out/report.json")" \
@@ -69,15 +69,70 @@ jq -n \
 	--slurpfile after_build "$pair_root/after/build-stage.json" \
 	--slurpfile before_test "$pair_root/before/test-stage.json" \
 	--slurpfile after_test "$pair_root/after/test-stage.json" \
-	'{schema:$schema,scenario:$scenario,job:$job,source_digest:$source_digest,contract_digest:$contract_digest,fixture_digest:$fixture_digest,toolchain:$toolchain,runner:$runner,before:{action:$before_report[0].plan.action,selected:$before_report[0].metrics.selected,executed:$before_report[0].metrics.executed,reused:$before_report[0].metrics.reused,build_wall_ms:$before_build[0].wall_ms,build_peak_rss_kib:$before_build[0].peak_rss_kib,test_wall_ms:$before_test[0].wall_ms,test_peak_rss_kib:$before_test[0].peak_rss_kib},after:{action:$after_report[0].plan.action,selected:$after_report[0].metrics.selected,executed:$after_report[0].metrics.executed,reused:$after_report[0].metrics.reused,build_wall_ms:$after_build[0].wall_ms,build_peak_rss_kib:$after_build[0].peak_rss_kib,test_wall_ms:$after_test[0].wall_ms,test_peak_rss_kib:$after_test[0].peak_rss_kib},exact_before_after_integer_pair:true,same_scenario_source_contract_fixture_toolchain_runner:true,improvement:{state:"CLOSED",reason:"EXACT_BEFORE_AFTER_INTEGER_PAIR_IN_ONE_CI_JOB",utility_state:"UNKNOWN",utility_reason:"NO_EXTERNAL_USER_EVIDENCE"}}' > "$pair_out"
+	'
+	def classify($item; $proof_gate):
+		($item.after - $item.before) as $delta |
+		(if $item.direction == "DECREASE" then
+			(if $delta < 0 then {observation:"IMPROVED", claim_state:"CLOSED", reason:"DECREASE_GOAL_AFTER_BELOW_BEFORE"}
+			 elif $delta == 0 then {observation:"UNCHANGED", claim_state:"NOT_CLAIMED", reason:"NO_CLAIM_UNCHANGED"}
+			 else {observation:"REGRESSED", claim_state:"REFUTED", reason:"DECREASE_GOAL_AFTER_ABOVE_BEFORE"} end)
+		 else
+			(if $delta > 0 then {observation:"IMPROVED", claim_state:"CLOSED", reason:"INCREASE_GOAL_AFTER_ABOVE_BEFORE"}
+			 elif $delta == 0 then {observation:"UNCHANGED", claim_state:"NOT_CLAIMED", reason:"NO_CLAIM_UNCHANGED"}
+			 else {observation:"REGRESSED", claim_state:"REFUTED", reason:"INCREASE_GOAL_AFTER_BELOW_BEFORE"} end)
+		 end) as $classification |
+		(if ($item.name == "selected" or $item.name == "executed") and $delta < 0 and ($proof_gate | not) then
+			$classification + {claim_state:"REFUTED", reason:"PROOF_GATE_REQUIRED_FOR_SELECTED_EXECUTED_DECREASE"}
+		 else $classification end) as $final |
+		$item + {signed_delta:$delta} + $final;
+	def raw($name; $direction; $before; $after):
+		{name:$name, direction:$direction, before:$before, after:$after};
+	{
+		schema:$schema, scenario:$scenario, job:$job, source_digest:$source_digest,
+		contract_digest:$contract_digest, fixture_digest:$fixture_digest,
+		toolchain:$toolchain, runner:$runner,
+		before:{action:$before_report[0].plan.action,selected:$before_report[0].metrics.selected,executed:$before_report[0].metrics.executed,reused:$before_report[0].metrics.reused,build_wall_ms:$before_build[0].wall_ms,build_peak_rss_kib:$before_build[0].peak_rss_kib,test_wall_ms:$before_test[0].wall_ms,test_peak_rss_kib:$before_test[0].peak_rss_kib},
+		after:{action:$after_report[0].plan.action,selected:$after_report[0].metrics.selected,executed:$after_report[0].metrics.executed,reused:$after_report[0].metrics.reused,build_wall_ms:$after_build[0].wall_ms,build_peak_rss_kib:$after_build[0].peak_rss_kib,test_wall_ms:$after_test[0].wall_ms,test_peak_rss_kib:$after_test[0].peak_rss_kib},
+		exact_before_after_integer_pair:true,
+		same_scenario_source_contract_fixture_toolchain_runner:true,
+		proof_gate:($before_report[0].plan.action == "SELECTED" and $after_report[0].plan.action == "REUSED" and $before_report[0].metrics.selected == 1 and $before_report[0].metrics.executed == 1 and $before_report[0].metrics.reused == 0 and $after_report[0].metrics.selected == 0 and $after_report[0].metrics.executed == 0 and $after_report[0].metrics.reused == 1 and $before_report[0].verification.reused_proof == false and $after_report[0].verification.reused_proof == true),
+		indicator_policy:{delta_definition:"after-minus-before",decrease_goal:"after < before",increase_goal:"after > before",unchanged_claim:"NOT_CLAIMED",regression_claim:"REFUTED",proof_gate:"selected/executed decrease is CLOSED only with exact PASS proof reuse"},
+		indicator_vector:[
+			raw("build_wall_ms"; "DECREASE"; $before_build[0].wall_ms; $after_build[0].wall_ms),
+			raw("build_peak_rss_kib"; "DECREASE"; $before_build[0].peak_rss_kib; $after_build[0].peak_rss_kib),
+			raw("test_wall_ms"; "DECREASE"; $before_test[0].wall_ms; $after_test[0].wall_ms),
+			raw("test_peak_rss_kib"; "DECREASE"; $before_test[0].peak_rss_kib; $after_test[0].peak_rss_kib),
+			raw("selected"; "DECREASE"; $before_report[0].metrics.selected; $after_report[0].metrics.selected),
+			raw("executed"; "DECREASE"; $before_report[0].metrics.executed; $after_report[0].metrics.executed),
+			raw("reused"; "INCREASE"; $before_report[0].metrics.reused; $after_report[0].metrics.reused)
+		]
+	} as $e
+	| ($e.proof_gate) as $proof_gate
+	| $e | .indicator_vector |= map(classify(.; $proof_gate))
+' > "$pair_out"
 
 jq -e '
-  .exact_before_after_integer_pair == true and .same_scenario_source_contract_fixture_toolchain_runner == true and
-  .before.action == "SELECTED" and .before.selected == 1 and .before.executed == 1 and .before.reused == 0 and
-  .after.action == "REUSED" and .after.selected == 0 and .after.executed == 0 and .after.reused == 1 and
-  (.before.build_wall_ms | type) == "number" and (.after.build_wall_ms | type) == "number" and
-  (.before.build_peak_rss_kib | type) == "number" and (.after.build_peak_rss_kib | type) == "number" and
-  (.before.test_wall_ms | type) == "number" and (.after.test_wall_ms | type) == "number" and
-  (.before.test_peak_rss_kib | type) == "number" and (.after.test_peak_rss_kib | type) == "number" and
-  .improvement.state == "CLOSED"
+	def integer: (type == "number" and (floor == .));
+	def expected_observation:
+		if .direction == "DECREASE" then
+			if .signed_delta < 0 then "IMPROVED" elif .signed_delta == 0 then "UNCHANGED" else "REGRESSED" end
+		else
+			if .signed_delta > 0 then "IMPROVED" elif .signed_delta == 0 then "UNCHANGED" else "REGRESSED" end
+		end;
+	def expected_claim:
+		if (.name == "selected" or .name == "executed") and .signed_delta < 0 then
+			if .proof_gate then "CLOSED" else "REFUTED" end
+		elif .observation == "IMPROVED" then "CLOSED"
+		elif .observation == "UNCHANGED" then "NOT_CLAIMED"
+		else "REFUTED" end;
+	((has("improvement") | not) and (has("overall_improvement") | not) and
+	 .exact_before_after_integer_pair == true and .same_scenario_source_contract_fixture_toolchain_runner == true and
+	 .before.action == "SELECTED" and .before.selected == 1 and .before.executed == 1 and .before.reused == 0 and
+	 .after.action == "REUSED" and .after.selected == 0 and .after.executed == 0 and .after.reused == 1 and
+	 .proof_gate == true and (.indicator_vector | length) == 7 and
+	 ([.indicator_vector[].name] == ["build_wall_ms","build_peak_rss_kib","test_wall_ms","test_peak_rss_kib","selected","executed","reused"]) and
+	 all(.indicator_vector[]; (.before | integer) and (.after | integer) and (.signed_delta | integer) and .signed_delta == (.after - .before) and .observation == expected_observation and
+		(if (.name == "selected" or .name == "executed") then .claim_state == "CLOSED" else .claim_state == expected_claim end)) and
+	 .indicator_policy.delta_definition == "after-minus-before" and
+	 .indicator_policy.unchanged_claim == "NOT_CLAIMED" and .indicator_policy.regression_claim == "REFUTED")
 ' "$pair_out" >/dev/null

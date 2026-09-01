@@ -37,7 +37,8 @@ func BuildInventory(root string) (Inventory, error) {
 			return nil
 		}
 		inventory.RegularFiles++
-		switch filepath.Ext(entry.Name()) {
+		ext := filepath.Ext(entry.Name())
+		switch ext {
 		case ".go":
 			inventory.GoFiles++
 		case ".gooo":
@@ -47,7 +48,14 @@ func BuildInventory(root string) (Inventory, error) {
 		if err != nil {
 			return err
 		}
-		inventory.PhysicalLines += physicalLineCount(data)
+		lines := physicalLineCount(data)
+		inventory.PhysicalLines += lines
+		switch ext {
+		case ".go":
+			inventory.GoPhysicalLines += lines
+		case ".gooo":
+			inventory.GoooPhysicalLines += lines
+		}
 		return nil
 	})
 	return inventory, err

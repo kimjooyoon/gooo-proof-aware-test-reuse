@@ -32,6 +32,30 @@ type Edge struct {
 	To   string `json:"to"`
 }
 
+type IndicatorSpec struct {
+	Name      string `json:"name"`
+	Direction string `json:"direction"`
+	Goal      string `json:"goal"`
+}
+
+type IndicatorPolicy struct {
+	DeltaDefinition   string `json:"delta_definition"`
+	ImprovementPolicy string `json:"improvement_policy"`
+	UnchangedClaim    string `json:"unchanged_claim"`
+	RegressionClaim   string `json:"regression_claim"`
+}
+
+type IndicatorObservation struct {
+	Name        string `json:"name"`
+	Before      int64  `json:"before"`
+	After       int64  `json:"after"`
+	SignedDelta int64  `json:"signed_delta"`
+	Direction   string `json:"direction"`
+	Observation string `json:"observation"`
+	ClaimState  string `json:"claim_state"`
+	Reason      string `json:"reason"`
+}
+
 type Impact struct {
 	Node string `json:"node"`
 }
@@ -51,6 +75,8 @@ type Meta struct {
 	ImpactPolicy     string       `json:"impact_policy"`
 	Activities       []string     `json:"activities"`
 	ForbiddenEffects []string     `json:"forbidden_effects"`
+	Indicators       []IndicatorSpec `json:"indicators"`
+	IndicatorPolicy  IndicatorPolicy  `json:"indicator_policy"`
 	SourcePath       string       `json:"source_path"`
 	SourceDigest     string       `json:"source_digest"`
 }
@@ -163,7 +189,9 @@ type Inventory struct {
 	DescendantDirs       int  `json:"descendant_dirs"`
 	RegularFiles         int  `json:"regular_files"`
 	GoFiles              int  `json:"go_files"`
+	GoPhysicalLines      int  `json:"go_physical_lines"`
 	GoooFiles            int  `json:"gooo_files"`
+	GoooPhysicalLines    int  `json:"gooo_physical_lines"`
 	PhysicalLines        int  `json:"physical_lines"`
 }
 
@@ -207,7 +235,8 @@ type RunReport struct {
 	Plan               Plan              `json:"plan"`
 	Unknown            []Unknown         `json:"unknown"`
 	Refuted            []Refutation      `json:"refuted"`
-	Improvement        Improvement       `json:"improvement"`
+	IndicatorSpecs     []IndicatorSpec   `json:"indicator_specs"`
+	IndicatorPolicy    IndicatorPolicy   `json:"indicator_policy"`
 	Utility            Unknown           `json:"utility"`
 	Metrics            RunMetrics        `json:"metrics"`
 	Inventory          Inventory         `json:"inventory"`
@@ -217,15 +246,6 @@ type RunReport struct {
 	ArtifactDigests    map[string]string `json:"artifact_digests"`
 	OperationalAudit   OperationalAudit  `json:"operational_audit"`
 	PrFirstConformance string            `json:"pr_first_conformance"`
-}
-
-type Improvement struct {
-	State            string `json:"state"`
-	Scenario         string `json:"scenario"`
-	SameJob          bool   `json:"same_job"`
-	ExactIntegerPair bool   `json:"exact_integer_pair"`
-	Reason           string `json:"reason"`
-	UtilityState     string `json:"utility_state"`
 }
 
 type ContractCase struct {

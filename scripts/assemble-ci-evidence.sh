@@ -5,7 +5,7 @@ stage_root=${1:?stage measurement directory is required}
 test_events=${2:?go test JSON event file is required}
 counts=${3:?conformance counts file is required}
 integration=${4:?integration result file is required}
-pair=${5:?improvement pair file is required}
+pair=${5:?indicator vector evidence file is required}
 output=${6:?evidence output path is required}
 
 for stage in compile build test conformance integration; do
@@ -36,4 +36,4 @@ jq -n \
 	--slurpfile integration "$integration" \
 	--slurpfile pair "$pair" \
 	--argjson inventory "$inventory" \
-	'{schema:$schema,commit:$commit,run_id:$run_id,job:$job,toolchain:"go1.27.0",runner:"ubuntu-latest",cross_project_required_gates:0,stage_measurements:{compile:$compile[0],build:$build[0],test:$test[0],conformance:$conformance[0],integration:$integration_stage[0]},tests:$tests[0],conformance:$counts[0],integration:$integration[0],improvement:$pair[0],inventory:$inventory,generated_artifacts:{count:$counts[0].generated_artifacts,bytes:$counts[0].generated_bytes},authority:{runtime:{repository_writes:0,commit_authority:0,push_authority:0,merge_authority:0,release_mutation:0,local_validation_commands:0,local_validation_state:"NOT_RUN"},operator:{pull_request:0,merge:0,release:0}},operational_audit:{state:"OPERATIONAL_REFUTED",exact_count:1,stage:"AUTHORING",step:"OPEN_IMPLEMENTATION_PR_BEFORE_MAIN_INTEGRATION",reason:"INITIAL_IMPLEMENTATION_PUSH_PRECEDED_PR"},pr_first_conformance:"REFUTED"}' > "$output"
+	'{schema:$schema,commit:$commit,run_id:$run_id,job:$job,toolchain:"go1.27.0",runner:"ubuntu-latest",cross_project_required_gates:0,stage_measurements:{compile:$compile[0],build:$build[0],test:$test[0],conformance:$conformance[0],integration:$integration_stage[0]},tests:$tests[0],conformance:$counts[0],integration:$integration[0],matched_pair:{scenario:$pair[0].scenario,job:$pair[0].job,source_digest:$pair[0].source_digest,contract_digest:$pair[0].contract_digest,fixture_digest:$pair[0].fixture_digest,toolchain:$pair[0].toolchain,runner:$pair[0].runner,before:$pair[0].before,after:$pair[0].after},indicator_vector:$pair[0].indicator_vector,indicator_policy:$pair[0].indicator_policy,proof_pair_identity:{exact_before_after_integer_pair:$pair[0].exact_before_after_integer_pair,same_scenario_source_contract_fixture_toolchain_runner:$pair[0].same_scenario_source_contract_fixture_toolchain_runner,proof_gate:$pair[0].proof_gate},inventory:$inventory,generated_artifacts:{count:$counts[0].generated_artifacts,bytes:$counts[0].generated_bytes},authority:{runtime:{repository_writes:0,commit_authority:0,push_authority:0,merge_authority:0,release_mutation:0,local_validation_commands:0,local_validation_state:"NOT_RUN"},operator:{pull_request:0,merge:0,release:0}},operational_audit:{state:"OPERATIONAL_REFUTED",exact_count:1,stage:"AUTHORING",step:"OPEN_IMPLEMENTATION_PR_BEFORE_MAIN_INTEGRATION",reason:"INITIAL_IMPLEMENTATION_PUSH_PRECEDED_PR"},pr_first_conformance:"REFUTED"}' > "$output"
