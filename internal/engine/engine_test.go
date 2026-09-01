@@ -24,10 +24,10 @@ func TestReceiptMatchesProofKey(t *testing.T) {
 
 func TestImpactPathReachesObligation(t *testing.T) {
 	program := Program{
-		Claims: []Claim{{ID: "message"}},
+		Claims:      []Claim{{ID: "message"}},
 		Obligations: []Obligation{{ID: "smoke"}},
-		Edges: []Edge{{From: "claim:message", To: "obligation:smoke"}},
-		Impacts: []Impact{{Node: "claim:message"}},
+		Edges:       []Edge{{From: "claim:message", To: "obligation:smoke"}},
+		Impacts:     []Impact{{Node: "claim:message"}},
 	}
 	graph := buildDependencyGraph(program, "smoke")
 	if !graph.PathToTarget || len(graph.Frontier) != 0 {

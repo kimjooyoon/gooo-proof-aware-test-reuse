@@ -130,13 +130,13 @@ func Run(options RunOptions) (RunReport, error) {
 	generatedCode := generateGo(program.Output)
 	resultDigest := DigestBytes([]byte(program.Output))
 	verification := Verification{
-		Schema:                "gooo/proof-aware-test-reuse/verification/v1",
-		GeneratedOutput:       program.Output,
-		ExpectedOutput:        program.Output,
-		ExpectedResultDigest:  resultDigest,
-		ExecutionRequired:     action == ActionSelected,
-		ExecutionVerified:     action == ActionSelected,
-		ReusedProof:           action == ActionReused,
+		Schema:               "gooo/proof-aware-test-reuse/verification/v1",
+		GeneratedOutput:      program.Output,
+		ExpectedOutput:       program.Output,
+		ExpectedResultDigest: resultDigest,
+		ExecutionRequired:    action == ActionSelected,
+		ExecutionVerified:    action == ActionSelected,
+		ReusedProof:          action == ActionReused,
 	}
 	if action == ActionReused {
 		verification.ExecutionVerified = len(receipts) == 1 && receipts[0].ResultDigest == resultDigest
@@ -178,16 +178,16 @@ func Run(options RunOptions) (RunReport, error) {
 		return RunReport{}, err
 	}
 	resultReceipt := Receipt{
-		Schema:          meta.ReceiptSchema,
-		Obligation:      obligation.ID,
-		State:           receiptState(decision),
-		SourceDigest:    key.SourceDigest,
-		ContractDigest:  key.ContractDigest,
-		FixtureDigest:   key.FixtureDigest,
-		ToolchainDigest: key.ToolchainDigest,
-		RunnerDigest:    key.RunnerDigest,
-		ResultDigest:    resultDigest,
-		OperationalAudit: operationalAudit(),
+		Schema:             meta.ReceiptSchema,
+		Obligation:         obligation.ID,
+		State:              receiptState(decision),
+		SourceDigest:       key.SourceDigest,
+		ContractDigest:     key.ContractDigest,
+		FixtureDigest:      key.FixtureDigest,
+		ToolchainDigest:    key.ToolchainDigest,
+		RunnerDigest:       key.RunnerDigest,
+		ResultDigest:       resultDigest,
+		OperationalAudit:   operationalAudit(),
 		PrFirstConformance: "REFUTED",
 	}
 	if err := writeJSON(receiptPath, resultReceipt); err != nil {
@@ -229,11 +229,11 @@ func Run(options RunOptions) (RunReport, error) {
 			Reason:           "EXACT_BEFORE_AFTER_INTEGER_PAIR_NOT_AVAILABLE",
 			UtilityState:     DecisionUnknown,
 		},
-		Utility:          UnknownClaim("UTILITY", "observe_external_user_evidence", "NO_EXTERNAL_USER_EVIDENCE", "MISSING_EXTERNAL_EVIDENCE", "COLLECT_REAL_USER_WORKLOAD_EVIDENCE", []string{"external-user-evidence"}),
-		Metrics:          metricsFor(action),
-		Inventory:        inventory,
+		Utility:            UnknownClaim("UTILITY", "observe_external_user_evidence", "NO_EXTERNAL_USER_EVIDENCE", "MISSING_EXTERNAL_EVIDENCE", "COLLECT_REAL_USER_WORKLOAD_EVIDENCE", []string{"external-user-evidence"}),
+		Metrics:            metricsFor(action),
+		Inventory:          inventory,
 		GeneratedArtifacts: artifacts,
-		Verification:     verification,
+		Verification:       verification,
 		Authority: Authority{
 			RepositoryWrites:        0,
 			CommitAuthority:         0,
@@ -243,8 +243,8 @@ func Run(options RunOptions) (RunReport, error) {
 			LocalValidationCommands: 0,
 			LocalValidationState:    "NOT_RUN",
 		},
-		ArtifactDigests: artifactDigests,
-		OperationalAudit: operationalAudit(),
+		ArtifactDigests:    artifactDigests,
+		OperationalAudit:   operationalAudit(),
 		PrFirstConformance: "REFUTED",
 	}
 	if err := writeHumanReport(filepath.Join(options.OutputDir, "human-report.md"), report); err != nil {
@@ -332,8 +332,8 @@ func RunSuite(options SuiteOptions) (SuiteReport, error) {
 		FixedDenominator: len(contract.Cases), Cases: cases, Actual: actual,
 		ExpectedStates: expectedStates, ActualStates: actualStates, Inventory: inventory,
 		GeneratedArtifacts: generatedArtifacts, GeneratedBytes: generatedBytes,
-		Authority: Authority{LocalValidationCommands: 0, LocalValidationState: "NOT_RUN"},
-		OperationalAudit: operationalAudit(),
+		Authority:          Authority{LocalValidationCommands: 0, LocalValidationState: "NOT_RUN"},
+		OperationalAudit:   operationalAudit(),
 		PrFirstConformance: "REFUTED",
 	}
 	if err := writeJSON(filepath.Join(options.OutputDir, "suite-report.json"), report); err != nil {
@@ -475,7 +475,7 @@ func inspectReceipts(receiptsDir string, program Program, key ProofKey, obligati
 			continue
 		}
 		if mode == "incremental" && !receiptMatches(receipt, key, obligationID) {
-			unknown = append(unknown, UnknownClaim("RECEIPT", "compare_proof_key", "RECEIPT_PROOF_KEY_STALE", "STALE_RECEIPT", []string{"source_digest", "contract_digest", "fixture_digest", "toolchain_digest", "runner_digest"}))
+			unknown = append(unknown, UnknownClaim("RECEIPT", "compare_proof_key", "RECEIPT_PROOF_KEY_STALE", "STALE_RECEIPT", "PRODUCE_EXACT_PASS_RECEIPT", []string{"source_digest", "contract_digest", "fixture_digest", "toolchain_digest", "runner_digest"}))
 		}
 	}
 	return receipts, paths, unknown, refuted, nil
@@ -548,11 +548,11 @@ func receiptState(decision string) string {
 
 func operationalAudit() OperationalAudit {
 	return OperationalAudit{
-		State: "OPERATIONAL_REFUTED",
+		State:      "OPERATIONAL_REFUTED",
 		ExactCount: 1,
-		Stage: "AUTHORING",
-		Step: "OPEN_IMPLEMENTATION_PR_BEFORE_MAIN_INTEGRATION",
-		Reason: "INITIAL_IMPLEMENTATION_PUSH_PRECEDED_PR",
+		Stage:      "AUTHORING",
+		Step:       "OPEN_IMPLEMENTATION_PR_BEFORE_MAIN_INTEGRATION",
+		Reason:     "INITIAL_IMPLEMENTATION_PUSH_PRECEDED_PR",
 	}
 }
 
