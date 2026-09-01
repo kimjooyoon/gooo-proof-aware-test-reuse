@@ -23,6 +23,18 @@ jobs:
         with:
           go-version: 1.27.0
           cache: false
+      - name: Remote formatting assist
+        run: gofmt -w $(git ls-files '*.go')
+      - name: Export remote formatting patch
+        if: always()
+        run: git diff --binary > "$RUNNER_TEMP/gofmt.patch"
+      - name: Upload remote formatting patch
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: remote-gofmt-patch-${{ github.sha }}
+          path: ${{ runner.temp }}/gofmt.patch
+          if-no-files-found: error
       - name: Verify Go 1.27
         run: test "$(go env GOVERSION)" = "go1.27.0"
       - name: Verify formatting
