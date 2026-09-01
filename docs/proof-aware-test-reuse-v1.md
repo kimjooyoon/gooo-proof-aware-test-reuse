@@ -25,8 +25,10 @@ The dependency graph is built from semantic nodes and directed edges. Every decl
 
 The report reduces claims using `REFUTED > UNKNOWN > CLOSED`. It never infers `CLOSED` or `FIXED_POINT` from an unknown top-level decision.
 
-## Improvement and authority
+## Indicator vector and authority
 
-An improvement can be `CLOSED` only inside one CI job with the same scenario, source, contract, fixture, toolchain, and runner, and with exact integer before/after pairs for measured build/test wall time and peak RSS. Without that pair, the improvement is `UNKNOWN`. Utility remains `UNKNOWN` without external user evidence.
+The `.gooo` contract declares seven indicators: `build_wall_ms`, `build_peak_rss_kib`, `test_wall_ms`, `test_peak_rss_kib`, `selected`, `executed`, and `reused`. Each matched CI pair records exact integer `before`, `after`, and `signed_delta = after - before` values, plus its direction, observation, and independent claim state. The vector is the only improvement evidence; there is no aggregate improvement score or state.
+
+For `DECREASE` indicators, `after < before` is `IMPROVED`/`CLOSED`, equality is `UNCHANGED`/`NOT_CLAIMED`, and `after > before` is `REGRESSED`/`REFUTED`. `reused` has an `INCREASE` goal, so the signs reverse. A decrease in `selected` or `executed` is `CLOSED` only when the same CI job proves exact PASS receipt reuse; otherwise the reduction is not a closed proof claim. The scenario, source, contract, fixture, toolchain, runner, and CI job identity must match. Utility remains `UNKNOWN` without external user evidence.
 
 Runtime authority is separate from operator authority. Runtime values are zero for repository writes, commit, push, merge, release mutation, and local validation commands. CI is the only validation authority for this repository; local validation is intentionally not run by the implementation workflow. If a local validation command is ever executed, its exact count must be preserved and the state becomes `OPERATIONAL_REFUTED`.

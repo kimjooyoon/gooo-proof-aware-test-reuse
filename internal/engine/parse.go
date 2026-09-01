@@ -17,7 +17,7 @@ func ParseMeta(path string) (Meta, error) {
 		Schema:     "gooo/proof-aware-test-reuse/meta/v1",
 		Precedence: []string{}, ReceiptStates: []string{}, ReceiptFields: []string{},
 		Claims: []Claim{}, Obligations: []Obligation{}, Edges: []Edge{}, Activities: []string{},
-		ForbiddenEffects: []string{}, SourcePath: path, SourceDigest: digest,
+		ForbiddenEffects: []string{}, Indicators: []IndicatorSpec{}, SourcePath: path, SourceDigest: digest,
 	}
 	if err := scanLines(data, func(line string, lineNumber int) error {
 		switch {
@@ -59,6 +59,20 @@ func ParseMeta(path string) (Meta, error) {
 			meta.Activities = append(meta.Activities, strings.TrimSpace(strings.TrimPrefix(line, "activity ")))
 		case strings.HasPrefix(line, "forbid_effect "):
 			meta.ForbiddenEffects = append(meta.ForbiddenEffects, strings.TrimSpace(strings.TrimPrefix(line, "forbid_effect ")))
+		case strings.HasPrefix(line, "indicator "):
+			indicator, ok := parseIndicator(strings.TrimSpace(strings.TrimPrefix(line, "indicator ")))
+			if !ok {
+				return fmt.Errorf("line %d: invalid indicator", lineNumber)
+			}
+			meta.Indicators = append(meta.Indicators, indicator)
+		case strings.HasPrefix(line, "delta_definition "):
+			meta.IndicatorPolicy.DeltaDefinition = strings.TrimSpace(strings.TrimPrefix(line, "delta_definition "))
+		case strings.HasPrefix(line, "improvement_policy "):
+			meta.IndicatorPolicy.ImprovementPolicy = strings.TrimSpace(strings.TrimPrefix(line, "improvement_policy "))
+		case strings.HasPrefix(line, "unchanged_claim "):
+			meta.IndicatorPolicy.UnchangedClaim = strings.TrimSpace(strings.TrimPrefix(line, "unchanged_claim "))
+		case strings.HasPrefix(line, "regression_claim "):
+			meta.IndicatorPolicy.RegressionClaim = strings.TrimSpace(strings.TrimPrefix(line, "regression_claim "))
 		}
 		return nil
 	}); err != nil {
@@ -170,6 +184,14 @@ func parseEdge(value string) (Edge, bool) {
 	return Edge{From: from, To: to}, from != "" && to != ""
 }
 
+func parseIndicator(value string) (IndicatorSpec, bool) {
+	fields := strings.Fields(value)
+	if len(fields) != 3 {
+		return IndicatorSpec{}, false
+	}
+	return IndicatorSpec{Name: fields[0], Direction: fields[1], Goal: fields[2]}, true
+}
+
 func parseQuoted(value string) (string, bool) {
 	if !strings.HasPrefix(value, "\"") {
 		return "", false
@@ -203,6 +225,29 @@ func validateMeta(meta Meta) error {
 	}
 	if len(meta.Claims) == 0 || len(meta.Obligations) == 0 || len(meta.Edges) == 0 || len(meta.Activities) == 0 {
 		return fmt.Errorf("meta must declare claims, obligations, dependency edges, and activities")
+	}
+	expectedIndicators := []IndicatorSpec{
+		{Name: "build_wall_ms", Direction: "DECREASE", Goal: "lower-is-better"},
+		{Name: "build_peak_rss_kib", Direction: "DECREASE", Goal: "lower-is-better"},
+		{Name: "test_wall_ms", Direction: "DECREASE", Goal: "lower-is-better"},
+		{Name: "test_peak_rss_kib", Direction: "DECREASE", Goal: "lower-is-better"},
+		{Name: "selected", Direction: "DECREASE", Goal: "proof-gated-lower"},
+		{Name: "executed", Direction: "DECREASE", Goal: "proof-gated-lower"},
+		{Name: "reused", Direction: "INCREASE", Goal: "higher-is-better"},
+	}
+	if len(meta.Indicators) != len(expectedIndicators) {
+		return fmt.Errorf("meta must declare exactly seven indicators")
+	}
+	for index, expected := range expectedIndicators {
+		if meta.Indicators[index] != expected {
+			return fmt.Errorf("indicator %d must be %s %s %s", index+1, expected.Name, expected.Direction, expected.Goal)
+		}
+	}
+	if meta.IndicatorPolicy.DeltaDefinition != "after-minus-before" ||
+		meta.IndicatorPolicy.ImprovementPolicy != "indicator-vector-only" ||
+		meta.IndicatorPolicy.UnchangedClaim != "NOT_CLAIMED" ||
+		meta.IndicatorPolicy.RegressionClaim != "REFUTED" {
+		return fmt.Errorf("meta indicator policy is incomplete or unsupported")
 	}
 	if strings.Join(meta.Precedence, ">") != "REFUTED>UNKNOWN>CLOSED" {
 		return fmt.Errorf("meta precedence must be REFUTED > UNKNOWN > CLOSED")

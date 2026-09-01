@@ -12,6 +12,17 @@ receipt_field toolchain_digest
 receipt_field runner_digest
 receipt_field result_digest
 impact_policy invalidate-only-along-dependency-path
+indicator build_wall_ms DECREASE lower-is-better
+indicator build_peak_rss_kib DECREASE lower-is-better
+indicator test_wall_ms DECREASE lower-is-better
+indicator test_peak_rss_kib DECREASE lower-is-better
+indicator selected DECREASE proof-gated-lower
+indicator executed DECREASE proof-gated-lower
+indicator reused INCREASE higher-is-better
+delta_definition after-minus-before
+improvement_policy indicator-vector-only
+unchanged_claim NOT_CLAIMED
+regression_claim REFUTED
 claim semantic-source ".gooo owns semantic claims and test obligations"
 claim semantic-graph ".gooo owns dependency edges and change impact"
 claim immutable-proof "only an exact explicit PASS receipt can authorize reuse"
