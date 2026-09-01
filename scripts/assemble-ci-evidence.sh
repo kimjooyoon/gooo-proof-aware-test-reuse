@@ -10,7 +10,7 @@ output=${6:?evidence output path is required}
 
 for stage in compile build test conformance integration; do
 	test -f "$stage_root/$stage.json"
-	jq -e --arg stage "$stage" '.stage == $stage and (.wall_ms|type) == "number" and (.wall_ms|floor) == . and (.wall_ms >= 0) and (.peak_rss_kib|type) == "number" and (.peak_rss_kib|floor) == . and (.peak_rss_kib >= 0) and .exit_code == 0' "$stage_root/$stage.json" >/dev/null
+	jq -e --arg stage "$stage" '.stage == $stage and (.wall_ms|type) == "number" and (.wall_ms|floor) == .wall_ms and (.wall_ms >= 0) and (.peak_rss_kib|type) == "number" and (.peak_rss_kib|floor) == .peak_rss_kib and (.peak_rss_kib >= 0) and .exit_code == 0' "$stage_root/$stage.json" >/dev/null
 done
 
 jq -s '{total:([.[]|select(.Action == "run" and (.Test // "") != "")]|length),selected:([.[]|select(.Action == "run" and (.Test // "") != "")]|length),executed:([.[]|select((.Action == "pass" or .Action == "skip") and (.Test // "") != "")]|length),reused:0,failed:([.[]|select(.Action == "fail" and (.Test // "") != "")]|length),unknown:0}' "$test_events" > "$stage_root/tests.json"
