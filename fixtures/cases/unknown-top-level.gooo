@@ -2,7 +2,7 @@ case unknown-top-level
 program canonical-unknown-decision
 namespace gooo.proof.reuse
 claim message "hello from Gooo"
-obligation smoke fixtures/hello.txt go1.27.0 ubuntu-latest
+obligation smoke proof-aware-test-reuse fixtures/hello.txt go1.27.0 ubuntu-latest
 edge claim:message -> obligation:smoke
 decision MAYBE
 output "hello from Gooo"

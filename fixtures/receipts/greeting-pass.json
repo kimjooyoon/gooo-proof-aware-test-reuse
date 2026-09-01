@@ -2,7 +2,7 @@
   "schema": "gooo/proof-aware-test-reuse/receipt/v1",
   "obligation": "smoke",
   "state": "PASS",
-  "source_digest": "sha256:b10c7f2c49298d85f5117c3a4f530be2d9b1aec013d24d41ecbde73bc2a76bcb",
+  "source_digest": "sha256:999280fabb3382c3aa172c97da3ad6c31b5058d529d55dbbe382faa841694ead",
   "contract_digest": "sha256:10dc2f7de4ea1f45e50769c846e155cc7b3935e51e73a91ed7cfd03623174c69",
   "fixture_digest": "sha256:a0d5a75faed6cce66394359b6eb8cc9cebb71dacb5c8e59e3f4a7097ac9131a2",
   "toolchain_digest": "sha256:1e2cfd19241fe0b068bbb00c1d3a8175615c4c54ad1b2d49b3860aa9e7fa61a4",

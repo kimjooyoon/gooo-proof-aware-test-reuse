@@ -14,7 +14,7 @@ func ParseMeta(path string) (Meta, error) {
 		return Meta{}, err
 	}
 	meta := Meta{
-		Schema: "gooo/proof-aware-test-reuse/meta/v1",
+		Schema:     "gooo/proof-aware-test-reuse/meta/v1",
 		Precedence: []string{}, ReceiptStates: []string{}, ReceiptFields: []string{},
 		Claims: []Claim{}, Obligations: []Obligation{}, Edges: []Edge{}, Activities: []string{},
 		ForbiddenEffects: []string{}, SourcePath: path, SourceDigest: digest,
