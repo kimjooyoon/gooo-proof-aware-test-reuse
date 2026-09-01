@@ -61,24 +61,24 @@ type Impact struct {
 }
 
 type Meta struct {
-	Schema           string       `json:"schema"`
-	Program          string       `json:"program"`
-	Namespace        string       `json:"namespace"`
-	Precedence       []string     `json:"precedence"`
-	ReceiptSchema    string       `json:"receipt_schema"`
-	ReceiptPolicy    string       `json:"receipt_policy"`
-	ReceiptStates    []string     `json:"receipt_states"`
-	ReceiptFields    []string     `json:"receipt_fields"`
-	Claims           []Claim      `json:"claims"`
-	Obligations      []Obligation `json:"obligations"`
-	Edges            []Edge       `json:"edges"`
-	ImpactPolicy     string       `json:"impact_policy"`
-	Activities       []string     `json:"activities"`
-	ForbiddenEffects []string     `json:"forbidden_effects"`
+	Schema           string          `json:"schema"`
+	Program          string          `json:"program"`
+	Namespace        string          `json:"namespace"`
+	Precedence       []string        `json:"precedence"`
+	ReceiptSchema    string          `json:"receipt_schema"`
+	ReceiptPolicy    string          `json:"receipt_policy"`
+	ReceiptStates    []string        `json:"receipt_states"`
+	ReceiptFields    []string        `json:"receipt_fields"`
+	Claims           []Claim         `json:"claims"`
+	Obligations      []Obligation    `json:"obligations"`
+	Edges            []Edge          `json:"edges"`
+	ImpactPolicy     string          `json:"impact_policy"`
+	Activities       []string        `json:"activities"`
+	ForbiddenEffects []string        `json:"forbidden_effects"`
 	Indicators       []IndicatorSpec `json:"indicators"`
-	IndicatorPolicy  IndicatorPolicy  `json:"indicator_policy"`
-	SourcePath       string       `json:"source_path"`
-	SourceDigest     string       `json:"source_digest"`
+	IndicatorPolicy  IndicatorPolicy `json:"indicator_policy"`
+	SourcePath       string          `json:"source_path"`
+	SourceDigest     string          `json:"source_digest"`
 }
 
 type Program struct {
