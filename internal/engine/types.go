@@ -82,6 +82,16 @@ type Receipt struct {
 	ToolchainDigest string `json:"toolchain_digest"`
 	RunnerDigest    string `json:"runner_digest"`
 	ResultDigest    string `json:"result_digest"`
+	OperationalAudit OperationalAudit `json:"operational_audit"`
+	PrFirstConformance string `json:"pr_first_conformance"`
+}
+
+type OperationalAudit struct {
+	State      string `json:"state"`
+	ExactCount int    `json:"exact_count"`
+	Stage      string `json:"stage"`
+	Step       string `json:"step"`
+	Reason     string `json:"reason"`
 }
 
 type ProofKey struct {
@@ -205,6 +215,8 @@ type RunReport struct {
 	Verification       Verification    `json:"verification"`
 	Authority          Authority       `json:"authority"`
 	ArtifactDigests    map[string]string `json:"artifact_digests"`
+	OperationalAudit   OperationalAudit `json:"operational_audit"`
+	PrFirstConformance string           `json:"pr_first_conformance"`
 }
 
 type Improvement struct {
@@ -260,6 +272,8 @@ type SuiteReport struct {
 	GeneratedArtifacts int        `json:"generated_artifacts"`
 	GeneratedBytes  int64         `json:"generated_bytes"`
 	Authority       Authority     `json:"authority"`
+	OperationalAudit OperationalAudit `json:"operational_audit"`
+	PrFirstConformance string          `json:"pr_first_conformance"`
 }
 
 func UnknownClaim(stage, step, reason, class, next string, blockedBy []string) Unknown {

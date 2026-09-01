@@ -187,6 +187,8 @@ func Run(options RunOptions) (RunReport, error) {
 		ToolchainDigest: key.ToolchainDigest,
 		RunnerDigest:    key.RunnerDigest,
 		ResultDigest:    resultDigest,
+		OperationalAudit: operationalAudit(),
+		PrFirstConformance: "REFUTED",
 	}
 	if err := writeJSON(receiptPath, resultReceipt); err != nil {
 		return RunReport{}, err
@@ -242,6 +244,8 @@ func Run(options RunOptions) (RunReport, error) {
 			LocalValidationState:    "NOT_RUN",
 		},
 		ArtifactDigests: artifactDigests,
+		OperationalAudit: operationalAudit(),
+		PrFirstConformance: "REFUTED",
 	}
 	if err := writeHumanReport(filepath.Join(options.OutputDir, "human-report.md"), report); err != nil {
 		return RunReport{}, err
@@ -329,6 +333,8 @@ func RunSuite(options SuiteOptions) (SuiteReport, error) {
 		ExpectedStates: expectedStates, ActualStates: actualStates, Inventory: inventory,
 		GeneratedArtifacts: generatedArtifacts, GeneratedBytes: generatedBytes,
 		Authority: Authority{LocalValidationCommands: 0, LocalValidationState: "NOT_RUN"},
+		OperationalAudit: operationalAudit(),
+		PrFirstConformance: "REFUTED",
 	}
 	if err := writeJSON(filepath.Join(options.OutputDir, "suite-report.json"), report); err != nil {
 		return SuiteReport{}, err
@@ -540,6 +546,16 @@ func receiptState(decision string) string {
 	return decision
 }
 
+func operationalAudit() OperationalAudit {
+	return OperationalAudit{
+		State: "OPERATIONAL_REFUTED",
+		ExactCount: 1,
+		Stage: "AUTHORING",
+		Step: "OPEN_IMPLEMENTATION_PR_BEFORE_MAIN_INTEGRATION",
+		Reason: "INITIAL_IMPLEMENTATION_PUSH_PRECEDED_PR",
+	}
+}
+
 func metricsFor(action string) RunMetrics {
 	metrics := RunMetrics{Total: 1}
 	switch action {
@@ -602,6 +618,7 @@ func writeHumanReport(path string, report RunReport) error {
 	fmt.Fprintf(&builder, "Decision: `%s`  \nCase: `%s`  \nMode: `%s`  \n\n", report.Decision, report.CaseID, report.Mode)
 	fmt.Fprintf(&builder, "The proof key is source `%s`, contract `%s`, fixture `%s`, toolchain `%s`, runner `%s`.\n\n", report.SourceDigest, report.ContractDigest, report.FixtureDigest, report.Toolchain, report.Runner)
 	fmt.Fprintf(&builder, "Plan: `%s` — %s.\n\n", report.Plan.Action, report.Plan.Reason)
+	fmt.Fprintf(&builder, "Operational audit: `%s` with exact count `%d`; pr_first_conformance=`%s`.\n\n", report.OperationalAudit.State, report.OperationalAudit.ExactCount, report.PrFirstConformance)
 	builder.WriteString("## Semantic artifacts\n\n")
 	builder.WriteString("The run emits semantic IR, dependency graph, deterministic test plan, a caller-owned generated Go program, execution evidence, and a receipt.\n\n")
 	builder.WriteString("## Claims\n\n")
@@ -623,6 +640,7 @@ func writeSuiteHumanReport(path string, report SuiteReport) error {
 	builder.WriteString("# Proof-aware test reuse conformance report\n\n")
 	fmt.Fprintf(&builder, "Decision: `%s`  \nMode: `%s`  \nFixed denominator: `%d` cases  \n\n", report.Decision, report.Mode, report.FixedDenominator)
 	fmt.Fprintf(&builder, "Actual: total=%d selected=%d executed=%d reused=%d unknown=%d refuted=%d.\n\n", report.Actual.Total, report.Actual.Selected, report.Actual.Executed, report.Actual.Reused, report.Actual.Unknown, report.Actual.Failed)
+	fmt.Fprintf(&builder, "Operational audit: `%s` with exact count `%d`; pr_first_conformance=`%s`.\n\n", report.OperationalAudit.State, report.OperationalAudit.ExactCount, report.PrFirstConformance)
 	builder.WriteString("| Case | Expected | Actual | Action | Reason |\n|---|---|---|---|---|\n")
 	for _, item := range report.Cases {
 		fmt.Fprintf(&builder, "| `%s` | `%s` | `%s` | `%s` | %s |\n", item.ID, item.Expected, item.Decision, item.Action, item.Reason)
