@@ -73,6 +73,8 @@ func ParseMeta(path string) (Meta, error) {
 			meta.IndicatorPolicy.UnchangedClaim = strings.TrimSpace(strings.TrimPrefix(line, "unchanged_claim "))
 		case strings.HasPrefix(line, "regression_claim "):
 			meta.IndicatorPolicy.RegressionClaim = strings.TrimSpace(strings.TrimPrefix(line, "regression_claim "))
+		default:
+			return fmt.Errorf("line %d: unknown meta declaration", lineNumber)
 		}
 		return nil
 	}); err != nil {
@@ -142,6 +144,8 @@ func ParseProgram(path string) (Program, error) {
 			program.Effects = append(program.Effects, strings.TrimSpace(strings.TrimPrefix(line, "effect ")))
 		case strings.HasPrefix(line, "decision "):
 			program.TopDecision = strings.TrimSpace(strings.TrimPrefix(line, "decision "))
+		default:
+			return fmt.Errorf("line %d: unknown program declaration", lineNumber)
 		}
 		return nil
 	}); err != nil {
