@@ -22,6 +22,12 @@ func TestReceiptMatchesProofKey(t *testing.T) {
 	}
 }
 
+func TestFirstObligationRejectsEmptyProgram(t *testing.T) {
+	if _, err := firstObligation(Program{}); err == nil {
+		t.Fatal("empty program was accepted without an obligation")
+	}
+}
+
 func TestImpactPathReachesObligation(t *testing.T) {
 	program := Program{
 		Claims:      []Claim{{ID: "message"}},

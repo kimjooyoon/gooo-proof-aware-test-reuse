@@ -58,13 +58,16 @@ func Run(options RunOptions) (RunReport, error) {
 	if err := ensureOutputDir(options.OutputDir); err != nil {
 		return RunReport{}, err
 	}
+	obligation, err := firstObligation(program)
+	if err != nil {
+		return RunReport{}, err
+	}
 
 	root := repositoryRoot(options.MetaPath)
-	fixtureDigest, err := digestFixture(root, program.Obligations[0].Fixture)
+	fixtureDigest, err := digestFixture(root, obligation.Fixture)
 	if err != nil {
 		return RunReport{}, fmt.Errorf("digest fixture: %w", err)
 	}
-	obligation := program.Obligations[0]
 	key := ProofKey{
 		SourceDigest:    program.SourceDigest,
 		ContractDigest:  contractDigest,
@@ -248,6 +251,13 @@ func Run(options RunOptions) (RunReport, error) {
 		return RunReport{}, err
 	}
 	return report, nil
+}
+
+func firstObligation(program Program) (Obligation, error) {
+	if len(program.Obligations) == 0 {
+		return Obligation{}, fmt.Errorf("program must contain at least one obligation")
+	}
+	return program.Obligations[0], nil
 }
 
 func RunSuite(options SuiteOptions) (SuiteReport, error) {
