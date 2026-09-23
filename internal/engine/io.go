@@ -46,6 +46,9 @@ func readJSON(path string, value any) error {
 	if err != nil {
 		return err
 	}
+	if err := rejectDuplicateJSONKeys(data); err != nil {
+		return err
+	}
 	if err := json.Unmarshal(data, value); err != nil {
 		return fmt.Errorf("decode %s: %w", path, err)
 	}
