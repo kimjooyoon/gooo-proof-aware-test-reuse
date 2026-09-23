@@ -59,3 +59,16 @@ func TestInventoryExcludesRootReadme(t *testing.T) {
 		t.Fatal("root README exclusion is not recorded")
 	}
 }
+
+func TestScanLinesPreservesHashInsideQuotedText(t *testing.T) {
+	var lines []string
+	if err := scanLines([]byte("output \"hello # world\" # trailing comment\n"), func(line string, _ int) error {
+		lines = append(lines, line)
+		return nil
+	}); err != nil {
+		t.Fatalf("scanLines returned error: %v", err)
+	}
+	if len(lines) != 1 || lines[0] != `output "hello # world"` {
+		t.Fatalf("scanLines removed quoted hash: %#v", lines)
+	}
+}
