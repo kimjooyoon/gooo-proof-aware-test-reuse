@@ -205,10 +205,7 @@ func scanLines(data []byte, visit func(string, int) error) error {
 	lineNumber := 0
 	for scanner.Scan() {
 		lineNumber++
-		line := strings.TrimSpace(scanner.Text())
-		if index := strings.IndexByte(line, '#'); index >= 0 {
-			line = strings.TrimSpace(line[:index])
-		}
+		line := strings.TrimSpace(stripComment(scanner.Text()))
 		if line == "" {
 			continue
 		}
@@ -217,6 +214,24 @@ func scanLines(data []byte, visit func(string, int) error) error {
 		}
 	}
 	return scanner.Err()
+}
+
+func stripComment(line string) string {
+	inQuote := false
+	escaped := false
+	for index := 0; index < len(line); index++ {
+		switch {
+		case escaped:
+			escaped = false
+		case line[index] == '\\' && inQuote:
+			escaped = true
+		case line[index] == '"':
+			inQuote = !inQuote
+		case line[index] == '#' && !inQuote:
+			return line[:index]
+		}
+	}
+	return line
 }
 
 func validateMeta(meta Meta) error {
